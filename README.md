@@ -1,3 +1,74 @@
+# PPSSPP-3D
+
+PPSSPP-3D is an experimental fork of PPSSPP that adds configurable
+stereoscopic 3D rendering for side-by-side (SBS) 3D displays.
+
+The project was developed and tested primarily for the ABXYlute 3D One,
+which can convert a fullscreen SBS image into glasses-free stereoscopic 3D.
+It may also be useful with other SBS-compatible 3D displays.
+
+PPSSPP-3D is currently based on PPSSPP 1.20.4.
+
+## Stereo 3D features
+
+- True stereoscopic rendering using PPSSPP's multiview rendering support
+- Side-by-side stereo output
+- Adjustable Stereo Depth
+- Adjustable Stereo Convergence
+- Adjustable Near Protection to reduce excessive separation on close objects
+- Distance-dependent stereo scaling for improved depth across the scene
+- Swap Eyes option
+- Mappable hotkeys for stereo adjustments
+- Per-game stereo settings
+- Stereo controls integrated into the normal Graphics settings
+- SBS output initialized automatically at startup
+
+### Default stereo settings
+
+- Stereo Depth: 50
+- Stereo Convergence: 20
+- Stereo Near Protection: 40
+- Stereo Display Shader: SideBySide
+- Swap Eyes: Off
+
+These defaults are intended as a balanced starting point. Different games
+may benefit from different stereo settings.
+
+## Requirements
+
+The current implementation uses PPSSPP's Vulkan multiview rendering path.
+A Vulkan-capable GPU with multiview support is therefore required for
+stereoscopic rendering.
+
+A display or device capable of displaying or converting side-by-side 3D
+is also required.
+
+## Status
+
+PPSSPP-3D is experimental. Stereo rendering has been tested successfully
+with multiple PSP games, but individual games may have rendering,
+depth, HUD, or convergence issues.
+
+The long-term goal is to improve the implementation and, where practical,
+contribute generally useful stereoscopic rendering improvements back to
+the upstream PPSSPP project.
+
+## Upstream PPSSPP
+
+PPSSPP-3D is an unofficial fork of PPSSPP and is not an official PPSSPP
+release.
+
+PPSSPP was created by Henrik Rydgård and is developed by the PPSSPP
+project and its contributors:
+
+https://www.ppsspp.org/
+
+Upstream source code:
+
+https://github.com/hrydgard/ppsspp
+
+---
+
 PPSSPP - a fast and portable PSP emulator
 =========================================
 
