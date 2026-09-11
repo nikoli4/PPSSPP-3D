@@ -836,13 +836,36 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 		}
 
 		WRITE(p, "  vec4 viewPos = vec4(mul(vec4(worldpos, 1.0), u_view).xyz, 1.0);\n");
+
 		if (useSimpleStereo) {
 			float ipd = 0.065f;
 			float scale = 1.0f;
+
 			if (PSP_CoreParameter().compat.vrCompat().UnitsPerMeter > 0) {
 				scale = PSP_CoreParameter().compat.vrCompat().UnitsPerMeter;
 			}
-			WRITE(p, "  viewPos.x += %f * float(gl_ViewIndex * 2 - 1);\n", scale * ipd * 0.5);
+
+			float stereoDepth = g_Config.iStereoDepth / 100.0f;
+			float eyeOffset = scale * ipd * 0.5f * stereoDepth;
+
+			WRITE(p, "  float stereoW = abs(mul(u_proj, viewPos).w);\n");
+
+			float stereoNearProtection = g_Config.iStereoNearProtection / 100.0f;
+
+			WRITE(
+				p,
+				"  float stereoNearScale = smoothstep(0.75, 2.0, stereoW);\n"
+				"  stereoNearScale = mix(%f, 1.0, stereoNearScale);\n",
+				stereoNearProtection
+			);
+
+			WRITE(
+				p,
+				"  float stereoDistanceBoost = max(stereoW / 3.25, 1.0);\n"
+				"  stereoDistanceBoost = min(stereoDistanceBoost, 4.0);\n"
+				"  viewPos.x += %f * stereoNearScale * stereoDistanceBoost * float(gl_ViewIndex * 2 - 1);\n",
+				eyeOffset
+			);
 		}
 
 		// Final view and projection transforms.
@@ -850,16 +873,33 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 			if (gstate_c.Use(GPU_USE_VIRTUAL_REALITY)) {
 				WRITE(p, "  vec4 outPos = depthRoundZVP(mul(u_proj_lens, viewPos));\n");
 				WRITE(p, "  vec4 orgPos = depthRoundZVP(mul(u_proj, viewPos));\n");
-			} else {
+			}
+			else {
 				WRITE(p, "  vec4 outPos = depthRoundZVP(mul(u_proj, viewPos));\n");
 			}
-		} else {
+		}
+		else {
 			if (gstate_c.Use(GPU_USE_VIRTUAL_REALITY)) {
 				WRITE(p, "  vec4 outPos = mul(u_proj_lens, viewPos);\n");
 				WRITE(p, "  vec4 orgPos = mul(u_proj, viewPos);\n");
-			} else {
+			}
+			else {
 				WRITE(p, "  vec4 outPos = mul(u_proj, viewPos);\n");
 			}
+		}
+
+		// Stereo convergence adjustment.
+		// Applies the same screen-space offset to all stereo geometry,
+		// independent of the game's projection matrix.
+		if (useSimpleStereo && g_Config.iStereoConvergence != 0) {
+			float convergence = g_Config.iStereoConvergence / 1000.0f;
+
+			WRITE(
+				p,
+				"  float stereoConvergenceScale = clamp(stereoW / 2.0, 0.25, 1.0);\n"
+				"  outPos.x += %f * stereoConvergenceScale * outPos.w * float(gl_ViewIndex * 2 - 1);\n",
+				convergence
+			);
 		}
 
 		// TODO: Declare variables for dots for shade mapping if needed.

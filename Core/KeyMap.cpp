@@ -483,6 +483,14 @@ const KeyMap_IntStrPair psp_button_names[] = {
 	{VIRTKEY_AXIS_SWAP_HOLD, "Axis swap (hold)"},
 	{VIRTKEY_AXIS_SWAP_TOGGLE, "Axis swap (toggle)"},
 
+	{VIRTKEY_STEREO_DEPTH_DECREASE, "Stereo Depth -"},
+	{VIRTKEY_STEREO_DEPTH_INCREASE, "Stereo Depth +"},
+	{VIRTKEY_STEREO_CONVERGENCE_DECREASE, "Stereo Convergence -"},
+	{VIRTKEY_STEREO_CONVERGENCE_INCREASE, "Stereo Convergence +"},
+	{VIRTKEY_STEREO_NEAR_PROTECTION_DECREASE, "Stereo near protection -" },
+	{VIRTKEY_STEREO_NEAR_PROTECTION_INCREASE, "Stereo near protection +" },
+	{VIRTKEY_STEREO_SWAP_EYES, "Stereo Swap Eyes"},
+
 	{VIRTKEY_FASTFORWARD, "Fast-forward"},
 	{VIRTKEY_PAUSE, "Pause"},
 	{VIRTKEY_PAUSE_NO_MENU, "Pause (no menu)"},

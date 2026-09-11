@@ -376,8 +376,21 @@ public:
 
 	// Note that this is separate from VR stereo, though it'll share some code paths.
 	bool bStereoRendering;
+
+	// Stereo depth percentage. 100 = stock PPSSPP eye separation.
+	int iStereoDepth;
+
+	// Stereo convergence adjustment. 0 = neutral.
+	int iStereoConvergence;
+
+	// Minimum stereo separation for very near objects. 20 = 20%.
+	int iStereoNearProtection;
+
 	// There can only be one, unlike regular post shaders.
 	std::string sStereoToMonoShader;
+	
+	// Swap left and right stereo eyes.
+	bool bStereoSwapEyes;
 
 	bool bShaderChainRequires60FPS;
 	std::string sTextureShaderName;

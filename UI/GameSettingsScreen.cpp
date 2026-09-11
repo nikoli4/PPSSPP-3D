@@ -80,6 +80,7 @@
 #include "Core/HLE/sceUtility.h"
 #include "GPU/Common/PostShader.h"
 #include "GPU/GPU.h"
+#include "GPU/GPUState.h"
 
 #if PPSSPP_PLATFORM(MAC) || PPSSPP_PLATFORM(IOS)
 #include "Core/Util/DarwinFileSystemServices.h"
@@ -291,6 +292,17 @@ void GameSettingsScreen::CreateTabs() {
 // TODO: Make this generic
 extern int DefaultDepthRaster();
 
+static std::string PostShaderTranslateName(std::string_view value) {
+	const ShaderInfo* info = GetPostShaderInfo(value);
+	if (info) {
+		auto ps = GetI18NCategory(I18NCat::POSTSHADERS);
+		return std::string(ps->T(value, info->name));
+	}
+	else {
+		return std::string(value);
+	}
+}
+
 // Graphics
 void GameSettingsScreen::CreateGraphicsSettings(UI::ViewGroup *graphicsSettings) {
 	auto gr = GetI18NCategory(I18NCat::GRAPHICS);
@@ -348,7 +360,7 @@ void GameSettingsScreen::CreateGraphicsSettings(UI::ViewGroup *graphicsSettings)
 	resolutionChoice->SetEnabledFunc([] {
 		return !g_Config.bSoftwareRendering && !g_Config.bSkipBufferEffects;
 	});
-
+	
 	int deviceType = System_GetPropertyInt(SYSPROP_DEVICE_TYPE);
 
 	if (deviceType != DEVICE_TYPE_VR) {
@@ -450,7 +462,103 @@ void GameSettingsScreen::CreateGraphicsSettings(UI::ViewGroup *graphicsSettings)
 			}
 		}
 	}
+	// Stereoscopic 3D settings.
+	bool multiViewSupported = draw->GetDeviceCaps().multiViewSupported;
 
+	auto enableStereo = [=]() -> bool {
+		return g_Config.bStereoRendering && multiViewSupported;
+		};
+
+	if (multiViewSupported) {
+		graphicsSettings->Add(new ItemHeader(gr->T("Stereo rendering")));
+
+		CheckBox* stereoRendering = graphicsSettings->Add(
+			new CheckBox(&g_Config.bStereoRendering, gr->T("Stereo rendering"))
+		);
+		stereoRendering->OnClick.Add([](UI::EventParams& e) {
+			gstate_c.useFlagsChanged = true;
+			System_PostUIMessage(UIMessage::GPU_CONFIG_CHANGED);
+			});
+
+		PopupSliderChoice* stereoDepth = graphicsSettings->Add(
+			new PopupSliderChoice(
+				&g_Config.iStereoDepth,
+				0,
+				200,
+				50,
+				gr->T("Stereo depth"),
+				screenManager()
+			)
+		);
+		stereoDepth->SetEnabledFunc(enableStereo);
+		stereoDepth->OnChange.Add([](UI::EventParams& e) {
+			gstate_c.useFlagsChanged = true;
+			});
+
+		PopupSliderChoice* stereoConvergence = graphicsSettings->Add(
+			new PopupSliderChoice(
+				&g_Config.iStereoConvergence,
+				-100,
+				100,
+				20,
+				gr->T("Stereo convergence"),
+				screenManager()
+			)
+		);
+		stereoConvergence->SetEnabledFunc(enableStereo);
+		stereoConvergence->OnChange.Add([](UI::EventParams& e) {
+			gstate_c.useFlagsChanged = true;
+			});
+
+		PopupSliderChoice* stereoNearProtection = graphicsSettings->Add(
+			new PopupSliderChoice(
+				&g_Config.iStereoNearProtection,
+				0,
+				100,
+				40,
+				gr->T("Stereo near protection"),
+				screenManager()
+			)
+		);
+		stereoNearProtection->SetEnabledFunc(enableStereo);
+		stereoNearProtection->OnChange.Add([](UI::EventParams& e) {
+			gstate_c.useFlagsChanged = true;
+			});
+		ChoiceWithValueDisplay* stereoShaderChoice = graphicsSettings->Add(
+			new ChoiceWithValueDisplay(
+				&g_Config.sStereoToMonoShader,
+				gr->T("Stereo display shader"),
+				&PostShaderTranslateName
+			)
+		);
+
+		stereoShaderChoice->SetEnabledFunc(enableStereo);
+
+		stereoShaderChoice->OnClick.Add([=](EventParams& e) {
+			auto gr = GetI18NCategory(I18NCat::GRAPHICS);
+			auto procScreen = new PostProcScreen(
+				gr->T("Stereo display shader"),
+				0,
+				true
+			);
+
+			if (e.v)
+				procScreen->SetPopupOrigin(e.v);
+
+			screenManager()->push(procScreen);
+			});
+
+		CheckBox* stereoSwapEyes = graphicsSettings->Add(
+			new CheckBox(&g_Config.bStereoSwapEyes, gr->T("Swap eyes"))
+		);
+
+		stereoSwapEyes->SetEnabledFunc(enableStereo);
+
+		stereoSwapEyes->OnClick.Add([](UI::EventParams& e) {
+			gstate_c.useFlagsChanged = true;
+			System_PostUIMessage(UIMessage::GPU_CONFIG_CHANGED);
+			});
+	}
 	graphicsSettings->Add(new ItemHeader(gr->T("Frame Rate Control")));
 	static const char *frameSkip[] = {"Off", "1", "2", "3", "4", "5", "6", "7", "8"};
 	PopupMultiChoice *frameSkipping = graphicsSettings->Add(new PopupMultiChoice(&g_Config.iFrameSkip, gr->T("Frame Skipping"), frameSkip, 0, ARRAY_SIZE(frameSkip), I18NCat::GRAPHICS, screenManager()));

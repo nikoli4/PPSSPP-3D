@@ -625,7 +625,8 @@ void EmuScreen::sendMessage(UIMessage message, const char *value) {
 			bootIsReset_ = false;
 			gamePath_ = newGamePath;
 		}
-	} else if (message == UIMessage::CONFIG_LOADED) {
+	}
+	else if (message == UIMessage::CONFIG_LOADED) {
 		// In case we need to position touch controls differently.
 		RecreateViews();
 	} else if (message == UIMessage::SHOW_CONTROL_MAPPING && screenManager()->topScreen() == this) {
@@ -746,6 +747,28 @@ static void ShowFpsLimitNotice() {
 	g_OSD.Show(OSDType::STATUS_ICON, temp, "", "I_FAST_FORWARD", 1.5f, "altspeed");
 	g_OSD.SetFlags("altspeed", OSDMessageFlags::Transparent);
 }
+static void ShowStereoDepthNotice() {
+	char temp[51];
+	snprintf(temp, sizeof(temp), "Stereo Depth: %d%%", g_Config.iStereoDepth);
+	g_OSD.Show(OSDType::STATUS_ICON, temp, "", "", 1.5f, "stereodepth");
+}
+static void ShowStereoConvergenceNotice() {
+	char temp[51];
+	snprintf(temp, sizeof(temp), "Stereo Convergence: %d", g_Config.iStereoConvergence);
+	g_OSD.Show(OSDType::STATUS_ICON, temp, "", "", 1.5f, "stereoconvergence");
+}
+static void ShowStereoNearProtectionNotice() {
+	char temp[51];
+	snprintf(temp, sizeof(temp), "Stereo Near Protection: %d%%", g_Config.iStereoNearProtection);
+	g_OSD.Show(OSDType::STATUS_ICON, temp, "", "", 1.5f, "stereonearprotection");
+}
+
+static void ShowStereoSwapEyesNotice() {
+	const char* state = g_Config.bStereoSwapEyes ? "Swapped" : "Normal";
+	char temp[51];
+	snprintf(temp, sizeof(temp), "Stereo Eyes: %s", state);
+	g_OSD.Show(OSDType::STATUS_ICON, temp, "", "", 1.5f, "stereoswapeyes");
+}
 
 // NOTE: This is unsynchronized! We should have as little as possible in here.
 void EmuScreen::OnVKey(VirtKey virtualKeyCode, bool down) {
@@ -835,6 +858,62 @@ void EmuScreen::ProcessVKey(VirtKey virtKey) {
 	case VIRTKEY_TOGGLE_DEBUGGER:
 		g_Config.bShowImDebugger = !g_Config.bShowImDebugger;
 		break;
+
+	case VIRTKEY_STEREO_DEPTH_DECREASE:
+		g_Config.iStereoDepth -= 10;
+		if (g_Config.iStereoDepth < 0)
+			g_Config.iStereoDepth = 0;
+		gstate_c.useFlagsChanged = true;
+		ShowStereoDepthNotice();
+		break;
+
+	case VIRTKEY_STEREO_DEPTH_INCREASE:
+		g_Config.iStereoDepth += 10;
+		if (g_Config.iStereoDepth > 500)
+			g_Config.iStereoDepth = 500;
+		gstate_c.useFlagsChanged = true;
+		ShowStereoDepthNotice();
+		break;
+	
+	case VIRTKEY_STEREO_CONVERGENCE_DECREASE:
+		g_Config.iStereoConvergence -= 10;
+		if (g_Config.iStereoConvergence < -100)
+			g_Config.iStereoConvergence = -100;
+		gstate_c.useFlagsChanged = true;
+		ShowStereoConvergenceNotice();
+		break;
+
+	case VIRTKEY_STEREO_CONVERGENCE_INCREASE:
+		g_Config.iStereoConvergence += 10;
+		if (g_Config.iStereoConvergence > 100)
+			g_Config.iStereoConvergence = 100;
+		gstate_c.useFlagsChanged = true;
+		ShowStereoConvergenceNotice();
+		break;
+	
+	case VIRTKEY_STEREO_NEAR_PROTECTION_DECREASE:
+		g_Config.iStereoNearProtection -= 5;
+		if (g_Config.iStereoNearProtection < 0)
+			g_Config.iStereoNearProtection = 0;
+		gstate_c.useFlagsChanged = true;
+		ShowStereoNearProtectionNotice();
+		break;
+
+	case VIRTKEY_STEREO_NEAR_PROTECTION_INCREASE:
+		g_Config.iStereoNearProtection += 5;
+		if (g_Config.iStereoNearProtection > 100)
+			g_Config.iStereoNearProtection = 100;
+		gstate_c.useFlagsChanged = true;
+		ShowStereoNearProtectionNotice();
+		break;
+
+	case VIRTKEY_STEREO_SWAP_EYES:
+		g_Config.bStereoSwapEyes = !g_Config.bStereoSwapEyes;
+		gstate_c.useFlagsChanged = true;
+		System_PostUIMessage(UIMessage::GPU_CONFIG_CHANGED);
+		ShowStereoSwapEyesNotice();
+		break;
+
 	case VIRTKEY_TOGGLE_TILT:
 		g_Config.bTiltInputEnabled = !g_Config.bTiltInputEnabled;
 		if (!g_Config.bTiltInputEnabled) {
@@ -1270,7 +1349,7 @@ void EmuScreen::CreateViews() {
 
 	root_ = CreatePadLayout(touch, bounds.w, bounds.h, &pauseTrigger_, &g_controlMapper);
 	if (g_Config.bShowDeveloperMenu) {
-		root_->Add(new Button(dev->T("DevMenu")))->OnClick.Handle(this, &EmuScreen::OnDevTools);
+//		root_->Add(new Button(dev->T("DevMenu")))->OnClick.Handle(this, &EmuScreen::OnDevTools);
 	}
 
 	LinearLayout *buttons = new LinearLayout(Orientation::ORIENT_HORIZONTAL, new AnchorLayoutParams(bounds.centerX(), NONE, NONE, 60, Centering::Both));

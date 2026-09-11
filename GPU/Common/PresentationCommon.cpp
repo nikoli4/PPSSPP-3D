@@ -252,6 +252,11 @@ void PresentationCommon::CalculatePostShaderUniforms(int bufferWidth, int buffer
 	uniforms->setting[1] = GetShaderSettingValue(shaderInfo, 1, "SettingCurrentValue2");
 	uniforms->setting[2] = GetShaderSettingValue(shaderInfo, 2, "SettingCurrentValue3");
 	uniforms->setting[3] = GetShaderSettingValue(shaderInfo, 3, "SettingCurrentValue4");
+
+	// Allow the dedicated stereo option to control SBS eye order.
+	if (shaderInfo->section == "SideBySide") {
+		uniforms->setting[0] = g_Config.bStereoSwapEyes ? 1.0f : 0.0f;
+	}
 }
 
 static std::string ReadShaderSrc(const Path &filename) {
@@ -268,11 +273,14 @@ static std::string ReadShaderSrc(const Path &filename) {
 
 // Note: called on resize and settings changes.
 // Also takes care of making sure the appropriate stereo shader is compiled.
-bool PresentationCommon::UpdatePostShader(const DisplayLayoutConfig &config) {
+bool PresentationCommon::UpdatePostShader(const DisplayLayoutConfig& config) {
 	DestroyStereoShader();
 
+	// Make sure stereo shader metadata is loaded before looking it up.
+	ReloadAllPostShaderInfo(draw_);
+
 	if (gstate_c.Use(GPU_USE_SIMPLE_STEREO_PERSPECTIVE)) {
-		const ShaderInfo *stereoShaderInfo = GetPostShaderInfo(g_Config.sStereoToMonoShader);
+		const ShaderInfo* stereoShaderInfo = GetPostShaderInfo(g_Config.sStereoToMonoShader);
 		if (stereoShaderInfo) {
 			bool result = CompilePostShader(stereoShaderInfo, &stereoPipeline_);
 			if (result) {
@@ -285,7 +293,6 @@ bool PresentationCommon::UpdatePostShader(const DisplayLayoutConfig &config) {
 
 	std::vector<const ShaderInfo *> shaderInfo;
 	if (!g_Config.vPostShaderNames.empty()) {
-		ReloadAllPostShaderInfo(draw_);
 		shaderInfo = GetFullPostShadersChain(g_Config.vPostShaderNames);
 	}
 
